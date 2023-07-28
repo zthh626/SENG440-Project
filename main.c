@@ -2,10 +2,13 @@
 #include <stdio.h>
 
 /* Define constants to improve readability */
-#define BLOCK_SIZE 16
-#define STRIDE 2
+#define BLOCK_SIZE 3
+#define STRIDE 1
 
-int sad(int16_t A[16][16], int16_t B[16][16])
+#define IMG_W 67
+#define IMG_H 13
+
+int sad(int16_t A[BLOCK_SIZE][BLOCK_SIZE], int16_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
     int diff, sad = 0;
 
@@ -24,14 +27,10 @@ int sad(int16_t A[16][16], int16_t B[16][16])
     }
     return sad;
 }
-#define IMG_W 67
-#define IMG_H 13
 
 // This function initializes a block as a block of an image at starting point x, y
-int16_t init_block(int x, int y, int16_t image[IMG_W][IMG_H])
+void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int16_t block[BLOCK_SIZE][BLOCK_SIZE];
-
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
         for (int j = 0; j < BLOCK_SIZE; j++)
@@ -39,8 +38,6 @@ int16_t init_block(int x, int y, int16_t image[IMG_W][IMG_H])
             block[i][j] = image[x + i][y + j];
         }
     }
-
-    return block;
 }
 
 int main()
@@ -74,7 +71,7 @@ int main()
         "               /=\\ /=\\ /=\\         | | |                           "
         "________________[_]_[_]_[_]________/_]_[_\\_________________________"};
 
-    int16_t *A[BLOCK_SIZE][BLOCK_SIZE], *B[BLOCK_SIZE][BLOCK_SIZE];
+    int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
 
     int x, y, r, s;
 
@@ -92,17 +89,21 @@ int main()
             {
                 for (s = 0; s < (BLOCK_SIZE * 2); s++)
                 {
-                    // TODO: fix A and B inits
-                    A = init_block(x, y, imageA);
-                    B = init_block(x + r, y + s, imageB);
+                    init_block(x, y, imageA, A);
+                    init_block(x + r, y + s, imageB, B);
 
                     sadVal = sad(A, B);
+                    // TODO:
+                    if (sadVal != 0)
+                    {
+                        printf("x: %d, y: %d, r: %d, s: %d\n", x, y, r, s);
+                        break;
+                    }
+                    printf("SAD: %d\n", sadVal);
                 }
             }
         }
     }
-
-    printf("SAD: %d\n", sadVal);
 
     return 0;
 }
