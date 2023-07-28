@@ -1,8 +1,8 @@
 _neon-s:
-	/opt/arm/4.3.2/bin/arm-linux-gcc -mfloat-abi=softfp -mfpu=neon -static -O3 -S /tmp/main.c
+	gcc -mfloat-abi=softfp -mfpu=neon -static -O3 -S /tmp/main.c
 
 _neon-exe:
-	/opt/arm/4.3.2/bin/arm-linux-gcc -mfloat-abi=softfp -mfpu=neon main.s -o main.exe
+	gcc -mfloat-abi=softfp -mfpu=neon main.s -o main.exe
 
 _neon:
 	make _neon-s && make _neon-exe
