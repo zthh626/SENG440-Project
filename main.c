@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <arm_neon.h>
 
 /* Define constants to improve readability */
 #define BLOCK_SIZE 3
@@ -8,68 +9,71 @@
 #define IMG_W 67
 #define IMG_H 13
 
+/*
+In the above modified code, we load 8 elements at a time into NEON registers using vld1q_s16 and subtract them using vsubq_s16.
+We then calculate the absolute difference using vabsq_s16.
+The resulting absolute differences are accumulated into the sad vector using vaddq_s16.
+Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwise additions with vpaddlq_s16, vpaddlq_s32, and vgetq_lane_s64.
+*/
 int sad(int16_t A[BLOCK_SIZE][BLOCK_SIZE], int16_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int diff, sad = 0;
-
+    int16x8_t diff, sad = vdupq_n_s16(0);
     int i, j;
-
     for (i = 0; i < BLOCK_SIZE; i++)
     {
-        for (j = 0; j < BLOCK_SIZE; j++)
+        for (j = 0; j < BLOCK_SIZE; j += 8)
         {
-            diff = A[i][j] - B[i][j];
-            if (diff < 0)
-                sad -= diff;
-            else
-                sad += diff;
+            int16x8_t aVec = vld1q_s16(&A[i][j]);
+            int16x8_t bVec = vld1q_s16(&B[i][j]);
+            diff = vsubq_s16(aVec, bVec);
+            int16x8_t absDiff = vabsq_s16(diff);
+            sad = vaddq_s16(sad, absDiff);
         }
     }
-    return sad;
+    int32x4_t sad32 = vpaddlq_s16(sad);
+    int64x2_t sad64 = vpaddlq_s32(sad32);
+    int64_t sadTotal = vgetq_lane_s64(sad64, 0) + vgetq_lane_s64(sad64, 1);
+
+    return (int)sadTotal;
 }
 
 // This function initializes a block as a block of an image at starting point x, y
+/*
+To improve the init_block function to use Neon intrinsics, we can take advantage of Neon's 128-bit registers and load and store multiple elements at once.
+Here's an updated version of the init_block function using Neon intrinsics:
+
+Explanation:
+
+We use int16x8_t to represent an 8-element vector of 16-bit integers, which corresponds to a Neon register.
+The inner loop is executed BLOCK_SIZE times to load and store elements column-wise.
+The vld1q_s16 function is used to load a Neon register with 8 consecutive elements from the image array starting at the specified address (&image[x + i][y + j]).
+The vst1q_s16 function is used to store the 8 elements from the Neon register to the block array starting at the specified address (&block[i][j]).
+By using Neon intrinsics, this updated init_block function can load and store multiple elements at once, effectively improving the memory access efficiency and potentially enhancing the performance of the code.
+*/
 void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_SIZE][BLOCK_SIZE])
 {
-    for (int i = 0; i < BLOCK_SIZE; i++)
+    for (int i = 0; i < BLOCK_SIZE; i += 8)
     {
         for (int j = 0; j < BLOCK_SIZE; j++)
         {
-            block[i][j] = image[x + i][y + j];
+            int16x8_t row = vld1q_s16(&image[x + i][y + j]);
+            vst1q_s16(&block[i][j], row);
         }
     }
 }
 
 int main()
 {
-    int16_t imageA[IMG_W][IMG_H] = {
-        "                                     /~\\                           "
-        "                                    |oo )                          "
-        "                                    _\\=/_                          "
-        "                    ___        #   /  _  \\                         "
-        "                   / ()\\        \\\\//|/.\\|\\\\                       "
-        "                 _|_____|_       \\/  \\_/  ||                       "
-        "                | | === | |         |\\ /| ||                       "
-        "                |_|  O  |_|         \\_ _/  #                       "
-        "                 ||  O  ||          | | |                          "
-        "                 ||__*__||          | | |                          "
-        "                |~ \\___/ ~|         []|[]                          "
-        "                /=\\ /=\\ /=\\         | | |                          "
-        "________________[_]_[_]_[_]________/_]_[_\\_________________________"};
-    int16_t imageB[IMG_W][IMG_H] = {
-        "                                     /~\\                           "
-        "                                    |oo )                          "
-        "                                    _\\=/_                          "
-        "                    ___        #   /  _  \\  #                      "
-        "                   / ()\\        \\//|/.\\|\\//                       "
-        "                 _|_____|_       \\/  \\_/  \\/                       "
-        "                | | === | |         |\\ /|                          "
-        "                |_|  O  |_|         \\_ _/                          "
-        "                 ||  O  ||          | | |                          "
-        "                 ||__*__||          | | |                          "
-        "              |~ \\___/ ~|         []|[]                            "
-        "               /=\\ /=\\ /=\\         | | |                           "
-        "________________[_]_[_]_[_]________/_]_[_\\_________________________"};
+    int16_t imageA[IMG_W][IMG_H] = {{0}};
+    int16_t imageB[IMG_W][IMG_H] = {{0}};
+
+    for (int i = 0; i < IMG_W; i++)
+    {
+        for (int j = 0; j < IMG_H; j++)
+        {
+            imageB[i][j] = 1;
+        }
+    }
 
     int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
 
