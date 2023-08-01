@@ -78,6 +78,10 @@ int main()
     // Assert that max value of sad can be stored in uint16_t
     assert((BLOCK_SIZE * BLOCK_SIZE * MAX_DIFF) < pow(2, 16));
 
+    // Assert that image is at least big enough to contain one block + 2-block radius
+    assert(IMG_W >= (BLOCK_SIZE * 3))
+    assert(IMG_H >= (BLOCK_SIZE * 3))
+
     int16_t imageA[IMG_W][IMG_H] = {{0}};
     int16_t imageB[IMG_W][IMG_H] = {{0}};
 
