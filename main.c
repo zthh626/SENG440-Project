@@ -1,16 +1,19 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <arm_neon.h>
+#include <assert.h>
+#include <math.h>
 
 /* Define constants to improve readability */
-#define BLOCK_SIZE 3
+#define BLOCK_SIZE 16
 #define STRIDE 1
 
-#define IMG_W 67
-#define IMG_H 13
+#define IMG_W 64
+#define IMG_H 64
 
+#define MAX_DIFF 8
 /*
-In the above modified code, we load 8 elements at a time into NEON registers using vld1q_s16 and subtract them using vsubq_s16.
+In the following modified code, we load 8 elements at a time into NEON registers using vld1q_s16 and subtract them using vsubq_s16.
 We then calculate the absolute difference using vabsq_s16.
 The resulting absolute differences are accumulated into the sad vector using vaddq_s16.
 Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwise additions with vpaddlq_s16, vpaddlq_s32, and vgetq_lane_s64.
@@ -64,6 +67,17 @@ void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_S
 
 int main()
 {
+    // Assert that block size is compatible with image dimensions
+    assert(IMG_W % BLOCK_SIZE == 0);
+    assert(IMG_H % BLOCK_SIZE == 0);
+
+    // Assert that block size is compatible with vector length
+    assert(BLOCK_SIZE >= 8);
+    assert(BLOCK_SIZE % 8 == 0);
+
+    // Assert that max value of sad can be stored in uint16_t
+    assert((BLOCK_SIZE * BLOCK_SIZE * MAX_DIFF) < pow(2, 16));
+
     int16_t imageA[IMG_W][IMG_H] = {{0}};
     int16_t imageB[IMG_W][IMG_H] = {{0}};
 
@@ -81,7 +95,8 @@ int main()
 
     int motionVectorX = 0;
     int motionVectorY = 0;
-    int minSad, sadVal = 0;
+    int minSad = 0;
+    int sadVal = 0;
 
     // Iterate through every block A starting position
     for (x = 0; x < (IMG_W - BLOCK_SIZE); x += BLOCK_SIZE)
@@ -97,7 +112,9 @@ int main()
                     init_block(x + r, y + s, imageB, B);
 
                     sadVal = sad(A, B);
-                    // TODO:
+                    
+                    // TODO: Update motion vector if necessary
+
                     if (sadVal != 0)
                     {
                         printf("x: %d, y: %d, r: %d, s: %d\n", x, y, r, s);
