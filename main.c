@@ -79,8 +79,8 @@ int main()
     assert((BLOCK_SIZE * BLOCK_SIZE * MAX_DIFF) < pow(2, 16));
 
     // Assert that image is at least big enough to contain one block + 2-block radius
-    assert(IMG_W >= (BLOCK_SIZE * 3))
-    assert(IMG_H >= (BLOCK_SIZE * 3))
+    assert(IMG_W >= (BLOCK_SIZE * 3));
+    assert(IMG_H >= (BLOCK_SIZE * 3));
 
     int16_t imageA[IMG_W][IMG_H] = {{0}};
     int16_t imageB[IMG_W][IMG_H] = {{0}};
@@ -117,18 +117,25 @@ int main()
 
                     sadVal = sad(A, B);
                     
-                    // TODO: Update motion vector if necessary
+                    // Update motion vector if new min SAD found
+                    if (sadVal < minSad) {
+                        minSad = sadVal;
+                        motionVectorX = r;
+                        motionVectorY = s;
+                    }
 
                     if (sadVal != 0)
                     {
                         printf("x: %d, y: %d, r: %d, s: %d\n", x, y, r, s);
                         break;
                     }
-                    printf("SAD: %d\n", sadVal);
                 }
             }
         }
     }
+
+    // Print the best motion vector match
+    printf("Motion vector: (%d, %d)\n", motionVectorX, motionVectorY);
 
     return 0;
 }
