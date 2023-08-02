@@ -112,9 +112,9 @@ int main()
         for (y = 0; (y + BLOCK_SIZE) <= IMG_H; y += BLOCK_SIZE)
         {
             // Check the SAD(A,B) for every block B in a 2-block radius around block A
-            for (r = BLOCK_SIZE * -2; r < (BLOCK_SIZE * 2); r++)
+            for (r = BLOCK_SIZE * -2; r < (BLOCK_SIZE * 2); r+=STRIDE)
             {
-                for (s = BLOCK_SIZE * -2; s < (BLOCK_SIZE * 2); s++)
+                for (s = BLOCK_SIZE * -2; s < (BLOCK_SIZE * 2); s+=STRIDE)
                 {
 
                     // Skip SAD if loop is out of bounds
