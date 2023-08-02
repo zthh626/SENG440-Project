@@ -61,9 +61,9 @@ void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_S
     assert((x + BLOCK_SIZE) <= IMG_W);
     assert((y + BLOCK_SIZE) <= IMG_H);
 
-    for (int i = 0; i < BLOCK_SIZE; i += 8)
+    for (int i = 0; i < BLOCK_SIZE; i++)
     {
-        for (int j = 0; j < BLOCK_SIZE; j++)
+        for (int j = 0; j < BLOCK_SIZE; j += 8)
         {
             int16x8_t row = vld1q_s16(&image[x + i][y + j]);
             vst1q_s16(&block[i][j], row);
@@ -123,7 +123,7 @@ int main()
     initImage(imageQ, 4, 4, 2, 2);
 
     
-    int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};;
+    int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
 
     int x, y, r, s;
 
@@ -154,17 +154,25 @@ int main()
                     init_block(x + r, y + s, imageQ, B);
 
                     sadVal = sad(A, B);
+                    // printf("x: %d, y: %d, r: %d, s: %d, --- sadVal: %d\n", x, y, r, s, sadVal);
                     
-                    // Update motion vector if new min SAD found
-                    if (sadVal < minSad) {
+                    // Update motion vector if new min SAD found, default to 0 motion vector
+                    if ((sadVal < minSad) || (sadVal == minSad && r == 0 && s == 0)) {
+                        // printf("sad: %d, minSad: %d\n\n", sadVal, minSad);
                         minSad = sadVal;
                         motionVectorX = r;
                         motionVectorY = s;
                     }
 
+                    if (x == 0 && y == 0 && r == 1 && s == 1) {
+                        printf("x: %d, y: %d, r: %d, s: %d, --- sadVal: %d\n", x, y, r, s, sadVal);
+                    }
+                    if (x == 0 && y == 0 && r == 0 && s == 0) {
+                        printf("x: %d, y: %d, r: %d, s: %d, --- sadVal: %d\n", x, y, r, s, sadVal);
+                    }
+
                     if (sadVal != 0)
                     {
-                        // printf("x: %d, y: %d, r: %d, s: %d\n", x, y, r, s);
                         break;
                     }
                 }
