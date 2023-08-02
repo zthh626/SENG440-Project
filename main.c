@@ -24,25 +24,23 @@ Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwi
 // Note: BLOCK_SIZE must be 16, or else we'll have to add an inner loop
 int sad(int8_t A[BLOCK_SIZE][BLOCK_SIZE], int8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int8x16_t diff, sad = vdupq_n_s8(0);
-    int i, j;
+    int16x8_t diff, sad = vdupq_n_s16(0);
+    int i;
     for (i = 0; i < BLOCK_SIZE; i++)
     {
-        
-        int8x16_t aVec = vld1q_s8(&A[i][0]);
-        int8x16_t bVec = vld1q_s8(&B[i][0]);
-        diff = vsubq_s8(aVec, bVec);
-        int8x16_t absDiff = vabsq_s8(diff);
-        sad = vaddq_s8(sad, absDiff);
-        
+        int16x8_t aVec = vmovl_s8(vld1_s8(&A[i][0]));
+        int16x8_t bVec = vmovl_s8(vld1_s8(&B[i][0]));
+        diff = vsubq_s16(aVec, bVec);
+        int16x8_t absDiff = vabsq_s16(diff);
+        sad = vaddq_s16(sad, absDiff);
     }
-    int16x8_t sad16 = vpaddlq_s8(sad);
-    int32x4_t sad32 = vpaddlq_s16(sad16);
+    int32x4_t sad32 = vpaddlq_s16(sad);
     int64x2_t sad64 = vpaddlq_s32(sad32);
     int64_t sadTotal = vgetq_lane_s64(sad64, 0) + vgetq_lane_s64(sad64, 1);
 
     return (int)sadTotal;
 }
+
 
 // This function initializes a block as a block of an image at starting point x, y
 /*
