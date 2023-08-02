@@ -83,7 +83,7 @@ void initImage(int16_t image[IMG_W][IMG_H], int shape_w, int shape_h, int shape_
         for(int j = 0; j < IMG_H; j++){
 
             // Make the frame
-            if (i >= shape_x && i <= (shape_x + shape_w) && j >= shape_y && j <= (shape_y + shape_h)){
+            if (i >= shape_x && i < (shape_x + shape_w) && j >= shape_y && j < (shape_y + shape_h)){
                 // Make the shape
                 image[i][j] = 7;
             }
