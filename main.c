@@ -55,6 +55,10 @@ By using Neon intrinsics, this updated init_block function can load and store mu
 */
 void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_SIZE][BLOCK_SIZE])
 {
+
+    assert((x + BLOCK_SIZE) <= IMG_W);
+    assert((y + BLOCK_SIZE) <= IMG_H);
+
     for (int i = 0; i < BLOCK_SIZE; i += 8)
     {
         for (int j = 0; j < BLOCK_SIZE; j++)
@@ -103,15 +107,23 @@ int main()
     int sadVal = 0;
 
     // Iterate through every block A starting position
-    for (x = 0; x < (IMG_W - BLOCK_SIZE); x += BLOCK_SIZE)
+    for (x = 0; (x + BLOCK_SIZE) <= IMG_W; x += BLOCK_SIZE)
     {
-        for (y = 0; y < (IMG_H - BLOCK_SIZE); y += BLOCK_SIZE)
+        for (y = 0; (y + BLOCK_SIZE) <= IMG_H; y += BLOCK_SIZE)
         {
-            // Check the SAD(A,B) for every block B in a 2-block radius
-            for (r = 0; r < (BLOCK_SIZE * 2); r++)
+            // Check the SAD(A,B) for every block B in a 2-block radius around block A
+            for (r = BLOCK_SIZE * -2; r < (BLOCK_SIZE * 2); r++)
             {
-                for (s = 0; s < (BLOCK_SIZE * 2); s++)
+                for (s = BLOCK_SIZE * -2; s < (BLOCK_SIZE * 2); s++)
                 {
+
+                    // Skip SAD if loop is out of bounds
+                    if ((x + r + BLOCK_SIZE) > IMG_W ||
+                        (y + s + BLOCK_SIZE) > IMG_H ||
+                        (x + r) < 0 ||
+                        (y + s) < 0)
+                        continue;
+                    
                     init_block(x, y, imageA, A);
                     init_block(x + r, y + s, imageB, B);
 
