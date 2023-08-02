@@ -20,24 +20,24 @@ We then calculate the absolute difference using vabsq_s16.
 The resulting absolute differences are accumulated into the sad vector using vaddq_s16.
 Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwise additions with vpaddlq_s16, vpaddlq_s32, and vgetq_lane_s64.
 */
-int sad(int16_t A[BLOCK_SIZE][BLOCK_SIZE], int16_t B[BLOCK_SIZE][BLOCK_SIZE])
+int sad(uint8_t A[BLOCK_SIZE][BLOCK_SIZE], uint8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int16x8_t diff, sad = vdupq_n_s16(0);
+    int8x16_t diff, sad = vdupq_n_s16(0);
     int i, j;
     for (i = 0; i < BLOCK_SIZE; i++)
     {
-        for (j = 0; j < BLOCK_SIZE; j += 8)
-        {
-            int16x8_t aVec = vld1q_s16(&A[i][j]);
-            int16x8_t bVec = vld1q_s16(&B[i][j]);
-            diff = vsubq_s16(aVec, bVec);
-            int16x8_t absDiff = vabsq_s16(diff);
-            sad = vaddq_s16(sad, absDiff);
-        }
+        
+        uint8x16_t aVec = vld1q_u8(&A[i][j]);
+        uint8x16_t bVec = vld1q_u8(&B[i][j]);
+        diff = vsubq_s16(aVec, bVec);
+        uint8x16_t absDiff = vabsq_s16(diff);
+        sad = vaddq_s16(sad, absDiff);
+        
     }
-    int32x4_t sad32 = vpaddlq_s16(sad);
-    int64x2_t sad64 = vpaddlq_s32(sad32);
-    int64_t sadTotal = vgetq_lane_s64(sad64, 0) + vgetq_lane_s64(sad64, 1);
+    uint16x8_t sad16 = vpaddlq_u8(sad);
+    uint32x4_t sad32 = vpaddlq_u16(sad16);
+    uint64x2_t sad64 = vpaddlq_u32(sad32);
+    uint64_t sadTotal = vgetq_lane_u64(sad64, 0) + vgetq_lane_u64(sad64, 1);
 
     return (int)sadTotal;
 }
@@ -55,7 +55,7 @@ The vld1q_s16 function is used to load a Neon register with 8 consecutive elemen
 The vst1q_s16 function is used to store the 8 elements from the Neon register to the block array starting at the specified address (&block[i][j]).
 By using Neon intrinsics, this updated init_block function can load and store multiple elements at once, effectively improving the memory access efficiency and potentially enhancing the performance of the code.
 */
-void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_SIZE][BLOCK_SIZE])
+void init_block(int x, int y, uint8_t image[IMG_W][IMG_H], uint8_t block[BLOCK_SIZE][BLOCK_SIZE])
 {
 
     assert((x + BLOCK_SIZE) <= IMG_W);
@@ -65,14 +65,14 @@ void init_block(int x, int y, int16_t image[IMG_W][IMG_H], int16_t block[BLOCK_S
     {
         for (int j = 0; j < BLOCK_SIZE; j += 8)
         {
-            int16x8_t row = vld1q_s16(&image[x + i][y + j]);
-            vst1q_s16(&block[i][j], row);
+            uint8x16_t row = vld1q_u8(&image[x + i][y + j]);
+            vst1q_u8(&block[i][j], row);
         }
     }
 }
 
 // This function initializes an image with a rectangle of size shape_w, shape_h at starting point shape_x, shape_y
-void initImage(int16_t image[IMG_W][IMG_H], int shape_w, int shape_h, int shape_x, int shape_y) {
+void initImage(uint8_t image[IMG_W][IMG_H], int shape_w, int shape_h, int shape_x, int shape_y) {
     // Assert that the shape is within the image
     assert(shape_x >= 0);
     assert(shape_y >= 0);
@@ -113,8 +113,8 @@ int main()
     assert(IMG_W >= (BLOCK_SIZE * 3));
     assert(IMG_H >= (BLOCK_SIZE * 3));
 
-    int16_t imageP[IMG_W][IMG_H] = {{0}};
-    int16_t imageQ[IMG_W][IMG_H] = {{0}};
+    uint8_t imageP[IMG_W][IMG_H] = {{0}};
+    uint8_t imageQ[IMG_W][IMG_H] = {{0}};
 
     // Initialize imageP with a rectangle of size 4x4 at starting point (16,16)
     initImage(imageP, 4, 4, 16, 16);
@@ -123,7 +123,7 @@ int main()
     initImage(imageQ, 4, 4, 10, 10);
 
     
-    int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
+    uint8_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
 
     int x, y, r, s;
 
