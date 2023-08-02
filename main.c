@@ -82,7 +82,7 @@ void initImage(int16_t image[IMG_W][IMG_H], int shape_w, int shape_h, int shape_
     for(int i = 0; i < IMG_W; i++){
         for(int j = 0; j < IMG_H; j++){
 
-            // Make the frame
+            // Make the shape
             if (i >= shape_x && i < (shape_x + shape_w) && j >= shape_y && j < (shape_y + shape_h)){
                 // Make the shape
                 image[i][j] = 7;
@@ -116,11 +116,11 @@ int main()
     int16_t imageP[IMG_W][IMG_H] = {{0}};
     int16_t imageQ[IMG_W][IMG_H] = {{0}};
 
-    // Initialize imageP with a rectangle of size 4x4 at starting point (1,1)
-    initImage(imageP, 4, 4, 1, 1);
+    // Initialize imageP with a rectangle of size 4x4 at starting point (16,16)
+    initImage(imageP, 4, 4, 16, 16);
 
-    // Initialize imageQ with a rectangle of size 4x4 at starting point (2,2)
-    initImage(imageQ, 4, 4, 2, 2);
+    // Initialize imageQ with a rectangle of size 4x4 at starting point (10,10)
+    initImage(imageQ, 4, 4, 10, 10);
 
     
     int16_t A[BLOCK_SIZE][BLOCK_SIZE] = {{0}}, B[BLOCK_SIZE][BLOCK_SIZE] = {{0}};
@@ -137,6 +137,9 @@ int main()
     {
         for (y = 0; (y + BLOCK_SIZE) <= IMG_H; y += BLOCK_SIZE)
         {
+            // Initialize block A
+            init_block(x, y, imageP, A);
+
             // Check the SAD(A,B) for every block B in a 2-block radius around block A
             for (r = BLOCK_SIZE * -2; r < (BLOCK_SIZE * 2); r+=STRIDE)
             {
@@ -150,7 +153,6 @@ int main()
                         (y + s) < 0)
                         continue;
                     
-                    init_block(x, y, imageP, A);
                     init_block(x + r, y + s, imageQ, B);
 
                     sadVal = sad(A, B);
