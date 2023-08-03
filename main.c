@@ -23,15 +23,25 @@ Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwi
 
 int sad(int8_t A[BLOCK_SIZE][BLOCK_SIZE], int8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int8x16_t diff, sad = vdupq_n_s8(0);
+    int8x16_t diff1, diff2, sad = vdupq_n_s8(0);
     int i;
-    for (i = 0; i < BLOCK_SIZE; i++)
+    for (i = 0; i < BLOCK_SIZE; i+=2)
     {
-        int8x16_t aVec = vld1q_s8(&A[i][0]);
-        int8x16_t bVec = vld1q_s8(&B[i][0]);
-        diff = vsubq_s8(aVec, bVec);
-        int8x16_t absDiff = vabsq_s8(diff);
-        sad = vaddq_s8(sad, absDiff);
+        // Unrolled loop once to enable software pipelining and to cut down on control overhead
+        int8x16_t aVec1 = vld1q_s8(&A[i][0]);
+        int8x16_t aVec2 = vld1q_s8(&A[i+1][0]);
+
+        int8x16_t bVec1 = vld1q_s8(&B[i][0]);
+        int8x16_t bVec2 = vld1q_s8(&B[i+1][0]);
+
+        diff1 = vsubq_s8(aVec1, bVec1);
+        diff2 = vsubq_s8(aVec2, bVec2);
+
+        int8x16_t absDiff1 = vabsq_s8(diff1);
+        int8x16_t absDiff2 = vabsq_s8(diff2);
+        sad = vaddq_s8(sad, absDiff1);
+        sad = vaddq_s8(sad, absDiff2);
+
     }
     int16x8_t sad16 = vpaddlq_s8(sad);
     int32x4_t sad32 = vpaddlq_s16(sad16);
