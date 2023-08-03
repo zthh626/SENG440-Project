@@ -11,7 +11,7 @@ _exe:
 	arm-linux-gcc -static -o main.exe /tmp/main.c
 
 neon:
-	cp ./main.c /tmp/main.c && make _neon && rm /tmp/main.c
+	make _neon && rm /tmp/main.c
 
 exe:
-	cp ./main.c /tmp/main.c && make _exe && chmod +x main.exe && rm /tmp/main.c
+	make _exe && chmod +x main.exe && rm /tmp/main.c
