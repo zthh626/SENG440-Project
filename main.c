@@ -25,6 +25,9 @@ int sad(int8_t A[BLOCK_SIZE][BLOCK_SIZE], int8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
     int8x16_t diff1, diff2, sad1 = vdupq_n_s8(0), sad2 = vdupq_n_s8(0);
     int i;
+
+    // Unrolling this loop once allows us to software pipeline.
+    // We interleaved the instructions in a way that avoids consecutive dependent instructions, allowing for parallel execution.
     for (i = 0; i < BLOCK_SIZE; i+=2)
     {
         // These are contiguous memory accesses; this is efficient for the cache, prefetching, and data transfer
