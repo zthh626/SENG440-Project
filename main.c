@@ -23,27 +23,28 @@ Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwi
 
 int sad(int8_t A[BLOCK_SIZE][BLOCK_SIZE], int8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
-    int8x16_t diff1, diff2, sad = vdupq_n_s8(0);
+    int8x16_t diff1, diff2, sad1 = vdupq_n_s8(0), sad2 = vdupq_n_s8(0);
     int i;
     for (i = 0; i < BLOCK_SIZE; i+=2)
     {
-        // Unrolled loop once to enable software pipelining and to cut down on control overhead
+        // These are contiguous memory accesses; this is efficient for the cache, prefetching, and data transfer
         int8x16_t aVec1 = vld1q_s8(&A[i][0]);
         int8x16_t aVec2 = vld1q_s8(&A[i+1][0]);
 
         int8x16_t bVec1 = vld1q_s8(&B[i][0]);
         int8x16_t bVec2 = vld1q_s8(&B[i+1][0]);
-
+        
         diff1 = vsubq_s8(aVec1, bVec1);
         diff2 = vsubq_s8(aVec2, bVec2);
 
         int8x16_t absDiff1 = vabsq_s8(diff1);
         int8x16_t absDiff2 = vabsq_s8(diff2);
-        sad = vaddq_s8(sad, absDiff1);
-        sad = vaddq_s8(sad, absDiff2);
 
+        sad1 = vaddq_s8(sad1, absDiff1);
+        sad2 = vaddq_s8(sad2, absDiff2);
     }
-    int16x8_t sad16 = vpaddlq_s8(sad);
+    sad1 = vaddq_s8(sad1, sad2);
+    int16x8_t sad16 = vpaddlq_s8(sad1);
     int32x4_t sad32 = vpaddlq_s16(sad16);
     int64x2_t sad64 = vpaddlq_s32(sad32);
     int64_t sadTotal = vgetq_lane_s64(sad64, 0) + vgetq_lane_s64(sad64, 1);
