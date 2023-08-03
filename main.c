@@ -15,19 +15,20 @@
 
 #define MAX_SAD_VAL (BLOCK_SIZE * BLOCK_SIZE * MAX_DIFF)
 /*
-In the following modified code, we load 16 elements at a time into NEON registers using vld1q_s16 and subtract them using vsubq_s16.
-We then calculate the absolute difference using vabsq_s16.
-The resulting absolute differences are accumulated into the sad vector using vaddq_s16.
-Finally, we reduce the 16-bit accumulators to a single 64-bit value using pairwise additions with vpaddlq_s16, vpaddlq_s32, and vgetq_lane_s64.
+In the following modified code, we load 16 elements at a time into NEON registers using vld1q_s8 and subtract them using vsubq_s8.
+We then calculate the absolute difference using vabsq_s8.
+The resulting absolute differences are accumulated into the sad vector using vaddq_s8.
+Finally, we reduce the 8-bit accumulations to a single 64-bit value using pairwise additions with vpaddlq_s8, vpaddlq_s16, vpaddlq_s32, and vgetq_lane_s64.
 */
 
+// This implemenation assumes that BLOCK_SIZE is 16
 int sad(int8_t A[BLOCK_SIZE][BLOCK_SIZE], int8_t B[BLOCK_SIZE][BLOCK_SIZE])
 {
     int8x16_t diff1, diff2, sad1 = vdupq_n_s8(0), sad2 = vdupq_n_s8(0);
     int i;
 
-    // Unrolling this loop once allows us to software pipeline.
-    // We interleaved the instructions in a way that avoids consecutive dependent instructions, allowing for parallel execution.
+    // Unrolling this loop once allows us to software pipeline; We interleaved the instructions
+    // in a way that avoids consecutive dependent instructions, allowing for parallel execution.
     for (i = 0; i < BLOCK_SIZE; i+=2)
     {
         // These are contiguous memory accesses; this is efficient for the cache, prefetching, and data transfer
@@ -63,12 +64,14 @@ Here's an updated version of the init_block function using Neon intrinsics:
 
 Explanation:
 
-We use int16x8_t to represent an 8-element vector of 16-bit integers, which corresponds to a Neon register.
+We use int8x16_t to represent an 16-element vector of 8-bit integers, which corresponds to a Neon register.
 The inner loop is executed BLOCK_SIZE times to load and store elements column-wise.
-The vld1q_s16 function is used to load a Neon register with 8 consecutive elements from the image array starting at the specified address (&image[x + i][y + j]).
-The vst1q_s16 function is used to store the 8 elements from the Neon register to the block array starting at the specified address (&block[i][j]).
+The vld1q_s8 function is used to load a Neon register with 16 elements from the image array starting at the specified address (&image[x + i][y + 0]).
+The vst1q_s8 function is used to store the 16 elements from the Neon register to the block array starting at the specified address (&block[i][0]).
 By using Neon intrinsics, this updated init_block function can load and store multiple elements at once, effectively improving the memory access efficiency and potentially enhancing the performance of the code.
 */
+
+// This implementation assumes that BLOCK_SIZE is 16
 void init_block(int x, int y, int8_t image[IMG_W][IMG_H], int8_t block[BLOCK_SIZE][BLOCK_SIZE])
 {
 
@@ -77,11 +80,9 @@ void init_block(int x, int y, int8_t image[IMG_W][IMG_H], int8_t block[BLOCK_SIZ
 
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
-        for (int j = 0; j < BLOCK_SIZE; j += 8)
-        {
-            int8x16_t row = vld1q_s8(&image[x + i][y + j]);
-            vst1q_s8(&block[i][j], row);
-        }
+        // The inner loop is removed and j is replaced with 0 because we are loading a full row at a time
+        int8x16_t row = vld1q_s8(&image[x + i][y + 0]);
+        vst1q_s8(&block[i][0], row);
     }
 }
 
